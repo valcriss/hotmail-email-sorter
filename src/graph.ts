@@ -12,6 +12,16 @@ import { logger } from './logger.js';
 
 const execAsync = promisify(exec);
 
+function getRequiredEnvVar(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    const message = `Environment variable ${name} is required`;
+    logger.error(message);
+    throw new Error(message);
+  }
+  return value;
+}
+
 interface GraphEmail {
   id: string;
   subject: string;
@@ -50,7 +60,7 @@ class MSALAuthenticationProvider implements AuthenticationProvider {
 export class MicrosoftGraphClient {
   private msalConfig = {
     auth: {
-      clientId: process.env.MICROSOFT_CLIENT_ID!,
+      clientId: getRequiredEnvVar('MICROSOFT_CLIENT_ID'),
       authority: `https://login.microsoftonline.com/${process.env.MICROSOFT_TENANT_ID || 'consumers'}`,
       ...(process.env.MICROSOFT_CLIENT_SECRET && {
         clientSecret: process.env.MICROSOFT_CLIENT_SECRET
