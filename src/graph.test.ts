@@ -1,4 +1,5 @@
 process.env.MICROSOFT_CLIENT_ID = 'test-client-id';
+process.env.LOG_LEVEL = 'debug';
 import { MicrosoftGraphClient } from './graph';
 import { logger } from './logger';
 
@@ -63,5 +64,31 @@ describe('startLocalServer', () => {
     expect(warnSpy).not.toHaveBeenCalled();
 
     warnSpy.mockRestore();
+  });
+});
+
+describe('moveEmail', () => {
+  it('logs warning when email stays in same folder', async () => {
+    const client = new MicrosoftGraphClient();
+    const mockPost = jest.fn().mockResolvedValue({ id: '1', parentFolderId: 'source' });
+    (client as any).graphClient = {
+      api: () => ({ post: mockPost })
+    };
+    const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+    await client.moveEmail('1', 'dest', 'source');
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('logs debug when email moves to a different folder', async () => {
+    const client = new MicrosoftGraphClient();
+    const mockPost = jest.fn().mockResolvedValue({ id: '1', parentFolderId: 'dest' });
+    (client as any).graphClient = {
+      api: () => ({ post: mockPost })
+    };
+    const debugSpy = jest.spyOn(logger, 'debug').mockImplementation(() => {});
+    await client.moveEmail('1', 'dest', 'source');
+    expect(debugSpy).toHaveBeenCalled();
+    debugSpy.mockRestore();
   });
 });

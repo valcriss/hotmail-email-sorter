@@ -414,18 +414,23 @@ export class MicrosoftGraphClient {
     }
   }
 
-  async moveEmail(emailId: string, folderId: string): Promise<void> {
+  async moveEmail(emailId: string, folderId: string, sourceFolderId: string): Promise<void> {
     if (!this.graphClient) {
       throw new Error('Client not authenticated');
     }
 
     try {
-      await this.graphClient
+      const result = await this.graphClient
         .api(`/me/messages/${emailId}/move`)
-        .post({
+        .post<{ id: string; parentFolderId: string }>({
           destinationId: folderId
         });
-      logger.debug(`Email moved: ${emailId.slice(-8)}`);
+
+      if (!result?.parentFolderId || result.parentFolderId === sourceFolderId) {
+        logger.warn(`Email not moved: ${emailId.slice(-8)}`);
+      } else {
+        logger.debug(`Email moved: ${emailId.slice(-8)}`);
+      }
     } catch (error: any) {
       if (error?.code === 'ErrorItemNotFound') {
         logger.warn(`Email not found: ${emailId.slice(-8)}`);
