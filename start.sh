@@ -20,7 +20,7 @@ echo "🔍 Vérification d'Ollama..."
 if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
     echo "❌ Ollama n'est pas accessible"
     echo "🔧 Démarrez Ollama avec : ollama serve"
-    echo "📦 Installez un modèle avec : ollama pull mistral:7b-instruct"
+    echo "📦 Installez un modèle avec : ollama pull qwen2:7b-instruct"
     exit 1
 else
     echo "✅ Ollama répond"

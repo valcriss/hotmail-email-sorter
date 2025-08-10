@@ -132,20 +132,20 @@ ollama serve
 
 ```bash
 # Option 1: Lightweight model (recommended)
-ollama pull mistral:7b-instruct
+ollama pull qwen2:7b-instruct
 
 # Option 2: More advanced model
 ollama pull llama3.1:latest
 
-# Option 3: Original project model
-ollama pull qwen2:7b-instruct
+# Option 3: Alternative model
+ollama pull mistral:7b-instruct
 ```
 
 #### 2.3 Configuration in .env
 
 ```bash
 OLLAMA_HOST=http://localhost:11434
-MODEL=mistral:7b-instruct  # or the installed model
+MODEL=qwen2:7b-instruct  # or the installed model
 ```
 
 ### Step 3: Environment variables configuration
@@ -161,7 +161,7 @@ MICROSOFT_REDIRECT_URI=http://localhost:8080/callback      # Must match Azure Ap
 
 # Ollama/AI Configuration
 OLLAMA_HOST=http://localhost:11434                         # Ollama server URL
-MODEL=mistral:7b-instruct                                  # AI model name
+MODEL=qwen2:7b-instruct                                  # AI model name
 
 # Application Mode
 DRY_RUN=1                                                  # 1 = test mode only, 0 = real sorting
@@ -333,7 +333,7 @@ EMAIL_LIMIT=3 LOG_LEVEL=error npm run dry
 
 **Possible causes:**
 1. Ollama is not started: `ollama serve`
-2. Model not installed: `ollama pull mistral:7b-instruct`
+2. Model not installed: `ollama pull qwen2:7b-instruct`
 3. Wrong model name in `.env`
 
 **Diagnosis:**
