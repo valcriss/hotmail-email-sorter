@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { MicrosoftGraphClient, type GraphEmail } from './graph.js';
-import { classifyEmail } from './llm.js';
+import { classifyEmail, type Decision } from './llm.js';
 import { logger } from './logger.js';
 
 const DRY = process.env.DRY_RUN === '1';
@@ -66,7 +66,7 @@ async function run() {
 
       try {
         // AI classification with full content
-        const decision = await classifyEmail({ from, subject, content: fullContent });
+        const decision: Decision = await classifyEmail({ from, subject, content: fullContent });
         logger.robot(`Decision:`, decision);
 
         if (DRY) {
@@ -104,7 +104,7 @@ async function run() {
   }
 }
 
-async function applyDecision(client: MicrosoftGraphClient, email: GraphEmail, decision: any) {
+async function applyDecision(client: MicrosoftGraphClient, email: GraphEmail, decision: Decision) {
   try {
     // Check if email still exists before processing
     const emailExists = await client.emailExists(email.id);
