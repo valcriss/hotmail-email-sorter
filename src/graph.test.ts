@@ -1,4 +1,5 @@
 import { MicrosoftGraphClient } from './graph';
+import { logger } from './logger';
 
 const baseEmail = {
   id: '1',
@@ -37,5 +38,29 @@ describe('convertEmailBodyToText', () => {
     } as any;
     const result = MicrosoftGraphClient.convertEmailBodyToText(email);
     expect(result.length).toBe(2000);
+  });
+});
+
+describe('startLocalServer', () => {
+  it('clears security timeout after successful authentication', async () => {
+    const client = new MicrosoftGraphClient();
+    const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+
+    const port = 4567;
+    const serverPromise = (client as any).startLocalServer(port, 100); // 100ms timeout for test
+
+    // Ensure server is ready before sending the request
+    await new Promise(resolve => setImmediate(resolve));
+
+    await fetch(`http://localhost:${port}/callback?code=testcode`);
+    const code = await serverPromise;
+    expect(code).toBe('testcode');
+
+    // Wait longer than the timeout to ensure it would have fired if not cleared
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    expect(warnSpy).not.toHaveBeenCalled();
+
+    warnSpy.mockRestore();
   });
 });
