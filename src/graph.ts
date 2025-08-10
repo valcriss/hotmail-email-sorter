@@ -305,12 +305,23 @@ export class MicrosoftGraphClient {
     }
 
     try {
-      const folders = await this.graphClient
+      const folders: GraphFolder[] = [];
+
+      // Request all root folders with pagination
+      let response: any = await this.graphClient
         .api('/me/mailFolders')
         .select('id,displayName')
+        .top(100)
         .get();
 
-      return folders.value || [];
+      folders.push(...(response.value || []));
+
+      while (response['@odata.nextLink']) {
+        response = await this.graphClient.api(response['@odata.nextLink']).get();
+        folders.push(...(response.value || []));
+      }
+
+      return folders;
     } catch (error) {
       logger.error('Error retrieving folders:', error);
       throw error;
@@ -343,15 +354,24 @@ export class MicrosoftGraphClient {
 
     try {
       const inboxId = await this.getInboxId();
-      const folders = await this.graphClient
+      const folders: GraphFolder[] = [];
+
+      // Request all inbox subfolders with pagination
+      let response: any = await this.graphClient
         .api(`/me/mailFolders/${inboxId}/childFolders`)
         .select('id,displayName')
+        .top(100)
         .get();
 
-      const subfolders = folders.value || [];
-      // Simplified log - only in debug mode if necessary
-      logger.debug(`Inbox subfolders found: ${subfolders.map((f: GraphFolder) => f.displayName).join(', ')}`);
-      return subfolders;
+      folders.push(...(response.value || []));
+
+      while (response['@odata.nextLink']) {
+        response = await this.graphClient.api(response['@odata.nextLink']).get();
+        folders.push(...(response.value || []));
+      }
+
+      logger.debug(`Inbox subfolders found: ${folders.map((f: GraphFolder) => f.displayName).join(', ')}`);
+      return folders;
     } catch (error) {
       logger.error('Error retrieving inbox subfolders:', error);
       throw error;
@@ -393,6 +413,7 @@ export class MicrosoftGraphClient {
       const existing = await this.graphClient
         .api(`/me/mailFolders?$filter=displayName eq '${filterName}'`)
         .select('id,displayName')
+        .top(100)
         .get();
 
       if (existing?.value && existing.value.length > 0) {
@@ -408,7 +429,30 @@ export class MicrosoftGraphClient {
         });
 
       return folder.id;
-    } catch (error) {
+    } catch (error: any) {
+      // If the folder already exists, try to retrieve its ID
+      if (error?.code === 'ErrorFolderExists') {
+        try {
+          const inboxFolders = await this.getInboxSubfolders();
+          const existingInbox = inboxFolders.find(
+            f => f.displayName.trim().toLowerCase() === name.trim().toLowerCase()
+          );
+          if (existingInbox) {
+            return existingInbox.id;
+          }
+
+          const allFolders = await this.getFolders();
+          const existingRoot = allFolders.find(
+            f => f.displayName.trim().toLowerCase() === name.trim().toLowerCase()
+          );
+          if (existingRoot) {
+            return existingRoot.id;
+          }
+        } catch (lookupError) {
+          logger.error('Error locating existing folder after conflict:', lookupError);
+        }
+      }
+
       logger.error('Error creating or retrieving folder:', error);
       throw error;
     }
