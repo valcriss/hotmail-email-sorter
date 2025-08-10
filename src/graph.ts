@@ -120,8 +120,9 @@ export class MicrosoftGraphClient {
     logger.success('Authentication successful!');
   }
 
-  private startLocalServer(port: number): Promise<string> {
+  private startLocalServer(port: number, timeoutMs: number = 120000): Promise<string> {
     return new Promise((resolve, reject) => {
+      let timeoutId: NodeJS.Timeout;
       const server = http.createServer((req, res) => {
         logger.debug(`Request received: ${req.method} ${req.url}`);
         
@@ -155,11 +156,12 @@ export class MicrosoftGraphClient {
                 </body>
               </html>
             `);
+            clearTimeout(timeoutId);
             server.close();
             reject(new Error(`OAuth Error: ${error} - ${errorDescription}`));
             return;
           }
-          
+
           if (code) {
             logger.debug(`Authorization code received: ${code.substring(0, 10)}...`);
             res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -175,6 +177,7 @@ export class MicrosoftGraphClient {
                 </body>
               </html>
             `);
+            clearTimeout(timeoutId);
             server.close();
             resolve(code);
           } else {
@@ -194,6 +197,7 @@ export class MicrosoftGraphClient {
             `);
             // Don't close server immediately to allow seeing the error
             setTimeout(() => {
+              clearTimeout(timeoutId);
               server.close();
               reject(new Error('Missing authorization code'));
             }, 2000);
@@ -226,17 +230,19 @@ export class MicrosoftGraphClient {
         logger.debug(`Authentication server started on port ${port}`);
       });
 
-      server.on('error', (error) => {
-        logger.error('Server error:', error);
-        reject(error);
-      });
-
       // Security timeout
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         logger.warn('2-minute timeout reached');
         server.close();
         reject(new Error('Authentication timeout'));
-      }, 120000); // 2 minutes
+      }, timeoutMs); // Default 2 minutes
+
+      server.on('error', (error) => {
+        logger.error('Server error:', error);
+        clearTimeout(timeoutId);
+        server.close();
+        reject(error);
+      });
     });
   }
 
