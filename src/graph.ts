@@ -517,7 +517,7 @@ export class MicrosoftGraphClient {
       return folderId;
     } catch (error: any) {
       // In case of error, use existing folder as fallback
-      logger.warn(`Issue with folder ${name}, using fallback`);
+      logger.warn(`Issue with folder ${name}, attempting fallback`);
       try {
         const inboxSubfolders = await this.getInboxSubfolders();
 
@@ -532,13 +532,10 @@ export class MicrosoftGraphClient {
           return fallbackFolder.id;
         }
 
-        // Last resort: use inbox
-        logger.debug(`Using inbox`);
-        const inboxId = await this.getInboxId();
-        this.folderCache.set(key, inboxId);
-        return inboxId;
+        logger.warn(`No available target folder for ${name}`);
+        throw error;
 
-      } catch (fallbackError) {
+      } catch {
         throw error; // Re-throw original error
       }
     }

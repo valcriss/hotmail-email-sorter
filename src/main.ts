@@ -114,15 +114,29 @@ async function applyDecision(client: MicrosoftGraphClient, email: GraphEmail, de
     }
 
     if (decision.action === 'move' && decision.folder) {
-      const folderId = await client.ensureFolder(decision.folder);
-      await client.moveEmail(email.id, folderId);
-      // Note: No need to markAsRead after move as email is already processed
+      let folderId: string | null = null;
+      try {
+        folderId = await client.ensureFolder(decision.folder);
+      } catch (err: any) {
+        logger.warn(`Skipping move for ${email.id.slice(-8)}: ${err?.message || err}`);
+      }
+      if (folderId) {
+        await client.moveEmail(email.id, folderId);
+        // Note: No need to markAsRead after move as email is already processed
+      }
     } else if (decision.action === 'mark_read') {
       await client.markAsRead(email.id);
     } else if (decision.action === 'archive') {
-      const archiveFolderId = await client.ensureFolder('Archive');
-      await client.moveEmail(email.id, archiveFolderId);
-      // Note: No need to markAsRead after move as email is already processed
+      let archiveFolderId: string | null = null;
+      try {
+        archiveFolderId = await client.ensureFolder('Archive');
+      } catch (err: any) {
+        logger.warn(`Skipping archive for ${email.id.slice(-8)}: ${err?.message || err}`);
+      }
+      if (archiveFolderId) {
+        await client.moveEmail(email.id, archiveFolderId);
+        // Note: No need to markAsRead after move as email is already processed
+      }
     }
     // 'ignore': do nothing
   } catch (error: any) {
