@@ -514,60 +514,66 @@ export class MicrosoftGraphClient {
   }
 
   async ensureFolder(name: string): Promise<string> {
+    const key = name.trim().toLowerCase();
+
     // Check cache first
-    if (this.folderCache.has(name)) {
-      return this.folderCache.get(name)!;
+    if (this.folderCache.has(key)) {
+      return this.folderCache.get(key)!;
     }
 
     try {
       // 1. First search in inbox subfolders
       const inboxSubfolders = await this.getInboxSubfolders();
-      const existingInboxFolder = inboxSubfolders.find(f => f.displayName.toLowerCase() === name.toLowerCase());
-      
+      const existingInboxFolder = inboxSubfolders.find(
+        f => f.displayName.trim().toLowerCase() === key
+      );
+
       if (existingInboxFolder) {
         logger.debug(`Folder found: ${name}`);
-        this.folderCache.set(name, existingInboxFolder.id);
+        this.folderCache.set(key, existingInboxFolder.id);
         return existingInboxFolder.id;
       }
-      
+
       // 2. Then search in all folders (root) in case it exists there
       const allFolders = await this.getFolders();
-      const existingRootFolder = allFolders.find(f => f.displayName.toLowerCase() === name.toLowerCase());
-      
+      const existingRootFolder = allFolders.find(
+        f => f.displayName.trim().toLowerCase() === key
+      );
+
       if (existingRootFolder) {
         logger.debug(`Folder found (root): ${name}`);
-        this.folderCache.set(name, existingRootFolder.id);
+        this.folderCache.set(key, existingRootFolder.id);
         return existingRootFolder.id;
       }
-      
+
       // 3. Create folder as inbox subfolder
       const folderId = await this.createFolder(name);
       logger.debug(`Folder created: ${name}`);
-      this.folderCache.set(name, folderId);
+      this.folderCache.set(key, folderId);
       return folderId;
     } catch (error: any) {
       // In case of error, use existing folder as fallback
       logger.warn(`Issue with folder ${name}, using fallback`);
       try {
         const inboxSubfolders = await this.getInboxSubfolders();
-        
+
         // Try to find similar folder
-        const fallbackFolder = inboxSubfolders.find(f => 
-          f.displayName.toLowerCase().includes(name.toLowerCase().substring(0, 4))
+        const fallbackFolder = inboxSubfolders.find(f =>
+          f.displayName.trim().toLowerCase().includes(key.substring(0, 4))
         );
-        
+
         if (fallbackFolder) {
           logger.debug(`Using folder: ${fallbackFolder.displayName}`);
-          this.folderCache.set(name, fallbackFolder.id);
+          this.folderCache.set(key, fallbackFolder.id);
           return fallbackFolder.id;
         }
-        
+
         // Last resort: use inbox
         logger.debug(`Using inbox`);
         const inboxId = await this.getInboxId();
-        this.folderCache.set(name, inboxId);
+        this.folderCache.set(key, inboxId);
         return inboxId;
-        
+
       } catch (fallbackError) {
         throw error; // Re-throw original error
       }
