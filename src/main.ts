@@ -121,7 +121,7 @@ async function applyDecision(client: MicrosoftGraphClient, email: GraphEmail, de
         logger.warn(`Skipping move for ${email.id.slice(-8)}: ${err?.message || err}`);
       }
       if (folderId) {
-        await client.moveEmail(email.id, folderId);
+        await client.moveEmail(email.id, folderId, email.parentFolderId);
         // Note: No need to markAsRead after move as email is already processed
       }
     } else if (decision.action === 'mark_read') {
@@ -134,7 +134,7 @@ async function applyDecision(client: MicrosoftGraphClient, email: GraphEmail, de
         logger.warn(`Skipping archive for ${email.id.slice(-8)}: ${err?.message || err}`);
       }
       if (archiveFolderId) {
-        await client.moveEmail(email.id, archiveFolderId);
+        await client.moveEmail(email.id, archiveFolderId, email.parentFolderId);
         // Note: No need to markAsRead after move as email is already processed
       }
     }
