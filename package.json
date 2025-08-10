@@ -1,0 +1,40 @@
+{
+  "name": "hotmail-email-sorter",
+  "version": "1.0.0",
+  "description": "Trieur d'emails automatique pour Hotmail/Outlook avec IA et Microsoft Graph API",
+  "main": "src/main.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dry": "DRY_RUN=1 tsx src/main.ts",
+    "start": "tsx src/main.ts",
+    "sort": "SORT_MODE=1 tsx src/main.ts",
+    "test": "npm run dry"
+  },
+  "keywords": [
+    "email",
+    "hotmail",
+    "outlook",
+    "automation",
+    "ai",
+    "sorting",
+    "microsoft-graph"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@azure/msal-node": "^3.7.0",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "@types/html-to-text": "^9.0.4",
+    "dotenv": "^17.2.1",
+    "html-to-text": "^9.0.5",
+    "isomorphic-fetch": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/isomorphic-fetch": "^0.0.39",
+    "@types/node": "^24.2.1",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
+  }
+}
