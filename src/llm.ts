@@ -41,10 +41,22 @@ Content: ${input.content}`;
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ model: MODEL, prompt, stream: false, options: { temperature: 0.1 } })
   });
-  const data = await res.json() as any;
-  const text: string = data.response || "{}";
-  const json = text.match(/\{[\s\S]*\}/)?.[0] ?? "{}";
-  const parsed = JSON.parse(json);
+
+  if (!res.ok) {
+    logger.error(`LLM request failed with status ${res.status}: ${res.statusText}`);
+    throw new Error(`LLM request failed with status ${res.status}`);
+  }
+
+  let parsed: any;
+  try {
+    const data = await res.json() as any;
+    const text: string = data.response || "{}";
+    const json = text.match(/\{[\s\S]*\}/)?.[0] ?? "{}";
+    parsed = JSON.parse(json);
+  } catch (error) {
+    logger.error('Failed to parse LLM response', error);
+    throw new Error('Invalid LLM JSON response');
+  }
   
   // Stricter validation
   const validCategories = ["Orders", "Hotels and Travel", "Advertisement", "Bills", "Personal", "Tech"];
