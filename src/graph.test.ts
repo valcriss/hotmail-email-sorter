@@ -1,3 +1,4 @@
+process.env.MICROSOFT_CLIENT_ID = 'test-client-id';
 import { MicrosoftGraphClient } from './graph';
 import { logger } from './logger';
 
