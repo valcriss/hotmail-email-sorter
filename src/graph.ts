@@ -385,8 +385,20 @@ export class MicrosoftGraphClient {
     if (!this.graphClient) {
       throw new Error('Client not authenticated');
     }
+    // Escape single quotes for OData filter
+    const filterName = name.replace(/'/g, "''");
 
     try {
+      // Check if folder already exists anywhere
+      const existing = await this.graphClient
+        .api(`/me/mailFolders?$filter=displayName eq '${filterName}'`)
+        .select('id,displayName')
+        .get();
+
+      if (existing?.value && existing.value.length > 0) {
+        return existing.value[0].id;
+      }
+
       // Create folder as subfolder of inbox
       const inboxId = await this.getInboxId();
       const folder = await this.graphClient
@@ -396,56 +408,8 @@ export class MicrosoftGraphClient {
         });
 
       return folder.id;
-    } catch (error: any) {
-      // If folder already exists, try to find it
-      if (error?.code === 'ErrorFolderExists' || error?.message?.includes('already exists')) {
-        
-        try {
-          // Force a new retrieval of subfolders (might be a cache issue)
-          await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
-          
-          const inboxSubfolders = await this.getInboxSubfolders();
-          const existingFolder = inboxSubfolders.find(f => f.displayName.toLowerCase() === name.toLowerCase());
-          if (existingFolder) {
-            return existingFolder.id;
-          }
-          
-          // Search in all folders just in case
-          const allFolders = await this.getFolders();
-          const rootFolder = allFolders.find(f => f.displayName.toLowerCase() === name.toLowerCase());
-          if (rootFolder) {
-            return rootFolder.id;
-          }
-          
-          // Last resort: create with slightly different name
-          const alternativeName = `${name} (2)`;
-          
-          try {
-            const folder = await this.graphClient!
-              .api(`/me/mailFolders/${await this.getInboxId()}/childFolders`)
-              .post({
-                displayName: alternativeName
-              });
-            
-            return folder.id;
-          } catch (altError) {
-            // In case of total failure, create at root (silent)
-            const rootFolder = await this.graphClient!
-              .api('/me/mailFolders')
-              .post({
-                displayName: `${name} (Root)`
-              });
-            
-            return rootFolder.id;
-          }
-          
-        } catch (searchError) {
-          // Silent failure, re-throw original error
-          throw error;
-        }
-      }
-      
-      // Silent failure, cannot create folder
+    } catch (error) {
+      logger.error('Error creating or retrieving folder:', error);
       throw error;
     }
   }
