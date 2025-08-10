@@ -4,9 +4,12 @@ import { logger } from './logger.js';
 const OLLAMA = process.env.OLLAMA_HOST || 'http://localhost:11434';
 const MODEL = process.env.MODEL || 'qwen2:7b-instruct';
 
+const VALID_ACTIONS = ["move", "mark_read", "archive", "ignore"] as const;
+type Action = typeof VALID_ACTIONS[number];
+
 export type Decision = {
   category: string;
-  action: "move" | "mark_read" | "archive" | "ignore";
+  action: Action;
   folder?: string;
   confidence: number; // 0..1
 };
@@ -68,7 +71,10 @@ Content: ${input.content}`;
   
   // Ensure folder matches category (some LLMs add underscores)
   parsed.folder = parsed.category;
-  
-  if (!parsed.action) throw new Error("Invalid LLM output: missing action");
+
+  if (!parsed.action || !VALID_ACTIONS.includes(parsed.action)) {
+    logger.warn(`Invalid action: ${parsed.action}, defaulting to ignore`);
+    parsed.action = "ignore";
+  }
   return parsed as Decision;
 }
